@@ -14,6 +14,7 @@ resource "aws_vpc" "vpc" {
 // Create the IGW
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
+
   tags = {
     name        = "${var.name}-${var.environment}-igw"
     environment = "${var.environment}"
@@ -89,6 +90,7 @@ resource "aws_security_group" "ssh_sg" {
   name        = "${var.name}-${var.environment}-ssh"
   description = "Security Group ${var.name}-${var.environment}"
   vpc_id      = aws_vpc.vpc.id
+
   tags = {
     name        = "${var.name}-${var.environment}-ssh"
     environment = "${var.environment}"
@@ -122,6 +124,7 @@ resource "aws_security_group" "web_sg" {
   name        = "${var.name}-${var.environment}-web"
   description = "Security Group ${var.name}-${var.environment}"
   vpc_id      = aws_vpc.vpc.id
+
   tags = {
     name        = "${var.name}-${var.environment}-web"
     environment = "${var.environment}"
@@ -163,6 +166,7 @@ resource "aws_security_group" "elb_sg" {
   name        = "${var.name}-${var.environment}-elb"
   description = "Security Group ${var.name}-${var.environment}"
   vpc_id      = aws_vpc.vpc.id
+
   tags = {
     name        = "${var.name}-${var.environment}-elb"
     environment = "${var.environment}"
@@ -233,6 +237,7 @@ resource "aws_instance" "ec2" {
   instance_type          = var.instance_type
   count                  = var.instance_count
   subnet_id              = element(split(",", local.public_subnet_id), count.index % 2)
+
   root_block_device {
     volume_type           = var.ebs_root_volume_type
     volume_size           = var.ebs_root_volume_size
@@ -244,7 +249,13 @@ resource "aws_instance" "ec2" {
     environment = var.environment
     server_role = var.server_role
   }
+
   user_data = var.user_data
+
+  # This is where we configure the instance with ansible-playbook
+  /*provisioner "local-exec" {
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ubuntu --key-file './secrets/key.pem' -i '${self.public_ip},' site.yml"
+  }*/
 }
 
 // Create RDS Database
@@ -266,6 +277,7 @@ resource "aws_db_instance" "rds" {
   password               = var.password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.id
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
+  skip_final_snapshot    = true
 
   tags = {
     name        = "${var.name}-${var.environment}"

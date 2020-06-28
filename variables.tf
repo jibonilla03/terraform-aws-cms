@@ -98,7 +98,7 @@ variable "username" {
 }
 
 variable "password" {
-  description = "password, provide through your ENV variables"
+  description = "password, provide through your interactive UI or ENV variables"
 }
 
 // DNS Route53 variables
