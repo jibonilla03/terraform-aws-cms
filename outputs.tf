@@ -7,11 +7,11 @@ output "vpc_id" {
 }
 
 output "public_subnets_id" {
-  value = "${join(",", aws_subnet.public.*.id)}"
+  value = join(",", aws_subnet.public.*.id)
 }
 
 output "private_subnets_id" {
-  value = "${join(",", aws_subnet.private.*.id)}"
+  value = join(",", aws_subnet.private.*.id)
 }
 
 output "ssh_sg_id" {
@@ -28,4 +28,12 @@ output "elb_sg_id" {
 
 output "rds_sg_id" {
   value = aws_security_group.rds_sg.id
+}
+
+output "ec2key_name" {
+  value = aws_key_pair.ec2key.key_name
+}
+
+output "ec2_id" {
+  value = join(",", aws_instance.ec2.*.id)
 }

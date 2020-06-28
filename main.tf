@@ -119,106 +119,131 @@ resource "aws_security_group" "ssh_sg" {
 
 // Create web security group
 resource "aws_security_group" "web_sg" {
-    name = "${var.name}-${var.environment}-web"
-    description = "Security Group ${var.name}-${var.environment}"
-    vpc_id = aws_vpc.vpc.id
-    tags = {
-      name = "${var.name}-${var.environment}-web"
-      environment =  "${var.environment}"
-    }
-    // allows traffic from the SG itself
-    ingress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        self = true
-    }
+  name        = "${var.name}-${var.environment}-web"
+  description = "Security Group ${var.name}-${var.environment}"
+  vpc_id      = aws_vpc.vpc.id
+  tags = {
+    name        = "${var.name}-${var.environment}-web"
+    environment = "${var.environment}"
+  }
+  // allows traffic from the SG itself
+  ingress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
+  }
 
-    // allow traffic for TCP 80
-    ingress {
-        from_port = 80
-        to_port = 80
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  // allow traffic for TCP 80
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    // allow traffic for TCP 443
-    ingress {
-        from_port = 443
-        to_port = 443
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+  // allow traffic for TCP 443
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 // Create security group for ELB
 resource "aws_security_group" "elb_sg" {
-    name = "${var.name}-${var.environment}-elb"
-    description = "Security Group ${var.name}-${var.environment}"
-    vpc_id = aws_vpc.vpc.id
-    tags = {
-      name = "${var.name}-${var.environment}-elb"
-      environment =  "${var.environment}"
-    }
-    # HTTP access from anywhere
+  name        = "${var.name}-${var.environment}-elb"
+  description = "Security Group ${var.name}-${var.environment}"
+  vpc_id      = aws_vpc.vpc.id
+  tags = {
+    name        = "${var.name}-${var.environment}-elb"
+    environment = "${var.environment}"
+  }
+  # HTTP access from anywhere
   ingress {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   # outbound internet access
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 // Create security group fro RDS
 resource "aws_security_group" "rds_sg" {
-    name = "${var.name}-${var.environment}-rds"
-    description = "Security Group ${var.name}-${var.environment}"
-    vpc_id = aws_vpc.vpc.id
-    tags = {
-      name = "${var.name}-${var.environment}-rds"
-      environment =  "${var.environment}"
-    }
+  name        = "${var.name}-${var.environment}-rds"
+  description = "Security Group ${var.name}-${var.environment}"
+  vpc_id      = aws_vpc.vpc.id
+  tags = {
+    name        = "${var.name}-${var.environment}-rds"
+    environment = "${var.environment}"
+  }
 
-    // allows traffic from the SG itself
-    ingress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        self = true
-    }
-
-    // allow traffic for TCP 3306
-    ingress {
-        from_port = 3306
-        to_port = 3306
-        protocol = "tcp"
-        security_groups = [aws_security_group.web_sg.id]
-    }
-
-    // outbound internet access
-    egress {
+  // allows traffic from the SG itself
+  ingress {
     from_port = 0
-    to_port = 0
-    protocol = "-1"
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
+  }
+
+  // allow traffic for TCP 3306
+  ingress {
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  // outbound internet access
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
+// Create EC2 keypair resource. A key pair is used to control login access to EC2 instances.
+resource "aws_key_pair" "ec2key" {
+  key_name   = var.key_name
+  public_key = var.public_key
+}
 
+// Create EC2 instances
+resource "aws_instance" "ec2" {
+  ami                    = data.aws_ami.ubuntu.id
+  vpc_security_group_ids = [aws_security_group.ssh_sg.id, aws_security_group.web_sg.id]
+  key_name               = var.key_name
+  instance_type          = var.instance_type
+  count                  = var.instance_count
+  subnet_id              = element(split(",", local.subnet_id), count.index % 2)
+  root_block_device {
+    volume_type           = var.ebs_root_volume_type
+    volume_size           = var.ebs_root_volume_size
+    delete_on_termination = var.ebs_root_delete_on_termination
+  }
+  tags = {
+    name        = "${var.name}-${var.environment}-${format("%02d", count.index + 1)}"
+    environment = var.environment
+    server_role = var.server_role
+  }
+  user_data = var.user_data
+}
 
 
