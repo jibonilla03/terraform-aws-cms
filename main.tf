@@ -232,12 +232,13 @@ resource "aws_instance" "ec2" {
   key_name               = var.key_name
   instance_type          = var.instance_type
   count                  = var.instance_count
-  subnet_id              = element(split(",", local.subnet_id), count.index % 2)
+  subnet_id              = element(split(",", local.public_subnet_id), count.index % 2)
   root_block_device {
     volume_type           = var.ebs_root_volume_type
     volume_size           = var.ebs_root_volume_size
     delete_on_termination = var.ebs_root_delete_on_termination
   }
+
   tags = {
     name        = "${var.name}-${var.environment}-${format("%02d", count.index + 1)}"
     environment = var.environment
@@ -246,4 +247,33 @@ resource "aws_instance" "ec2" {
   user_data = var.user_data
 }
 
+// Create RDS Database
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name        = "${var.name}-${var.environment}-subnet-group"
+  description = "Our main group of subnets"
+  subnet_ids  = split(",", local.private_subnet_id)
+}
+
+resource "aws_db_instance" "rds" {
+  identifier             = "${var.name}-${var.environment}"
+  allocated_storage      = var.storage
+  engine                 = var.engine
+  engine_version         = var.engine_version
+  instance_class         = var.instance_class
+  multi_az               = var.multi_az
+  name                   = var.db_name
+  username               = var.username
+  password               = var.password
+  db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.id
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+
+  tags = {
+    name        = "${var.name}-${var.environment}"
+    environment = var.environment
+  }
+
+  provisioner "local-exec" {
+    command = "echo DB_HOSTNAME: ${aws_db_instance.rds.address} >> ${var.name}-${var.environment}.yml"
+  }
+}
 

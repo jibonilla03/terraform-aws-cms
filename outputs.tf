@@ -37,3 +37,7 @@ output "ec2key_name" {
 output "ec2_id" {
   value = join(",", aws_instance.ec2.*.id)
 }
+
+output "rds_address" {
+  value = aws_db_instance.rds.address
+}

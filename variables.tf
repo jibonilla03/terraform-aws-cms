@@ -60,4 +60,45 @@ variable "user_data" {
   default     = "#!/bin/bash\napt-get -y update\napt-get -y install nginx\n"
 }
 
+// RDS variables
+
+variable "storage" {
+  description = "Storage size in GB"
+  default     = "5"
+}
+
+variable "engine" {
+  description = "Engine type, example values mysql, postgres"
+  default     = "mysql"
+}
+
+variable "engine_version" {
+  description = "Engine version"
+  default     = "5.7"
+}
+
+variable "instance_class" {
+  default     = "db.t2.micro"
+  description = "Instance class"
+}
+
+variable "multi_az" {
+  description = "Multi-AZ or not"
+  default     = false
+}
+
+variable "db_name" {
+  default     = "testdb"
+  description = "db name"
+}
+
+variable "username" {
+  default     = "root"
+  description = "User name"
+}
+
+variable "password" {
+  description = "password, provide through your ENV variables"
+}
+
 
