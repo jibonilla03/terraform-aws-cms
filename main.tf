@@ -315,4 +315,24 @@ resource "aws_elb" "elb" {
   }
 }
 
+// Create Route 53 DNS Records
+/*resource "aws_route53_record" "main" {
+  zone_id = aws_elb.elb.zone_id
+  name    = var.domain_name
+  type    = "A"
+
+  alias {
+    name                   = aws_elb.elb.dns_name
+    zone_id                = aws_elb.elb.zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = aws_elb.elb.zone_id
+  name    = "www.${var.domain_name}"
+  type    = "CNAME"
+  ttl     = "300"
+  records = [var.domain_name]
+}*/
 

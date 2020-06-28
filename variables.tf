@@ -101,4 +101,9 @@ variable "password" {
   description = "password, provide through your ENV variables"
 }
 
+// DNS Route53 variables
+/*variable "domain_name" {
+  default = "yourcustomdomain.net"
+}*/
+
 
