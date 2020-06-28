@@ -1,1 +1,2 @@
 DB_HOSTNAME: wordpress-dev.c0kk1wtlzwe0.us-west-1.rds.amazonaws.com
+ELB_DNS_NAME: wordpress-dev-elb-891223105.us-west-1.elb.amazonaws.com
